@@ -234,8 +234,6 @@ function ruigehond018_settings_validate( $input ): array {
 		}
 		$options['srcs'][ $index ] = $pair['src'];
 	}
-//	var_dump($options);
-//	die(' KAKKEEEEN');
 
 	return $options;
 }
