@@ -1,0 +1,17 @@
+.ruigehond018 .regular-text,
+.ruigehond018 textarea {
+    width: 100%;
+}
+
+.ruigehond018 textarea {
+    height: 6em;
+}
+
+.ruigehond018 input.src {
+    border-top: solid 2px #000;
+}
+
+#ruigehond018-settings-form .form-table th,
+#ruigehond018-settings-form .form-table td {
+    padding: 1px 10px 0 0;
+}
