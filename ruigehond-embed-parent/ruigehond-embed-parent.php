@@ -21,6 +21,13 @@ const RUIGEHOND018_VERSION = '1.3.0';
 add_shortcode( 'ruigehond-embed-parent', 'ruigehond_embed_parent_shortcode' );
 function ruigehond_embed_parent_shortcode( $attributes = [], $content = null, $short_code = 'ruigehond-embed-parent' ): string {
 	if ( false === isset( $attributes['src'] ) ) {
+		$vars = get_option( 'ruigehond018' );
+		if (isset ($vars['client_side']) && true === $vars['client_side']) {
+			wp_enqueue_script( 'ruigehond015_snuggle_javascript', plugin_dir_url( __FILE__ ) . 'snuggle.js', [], RUIGEHOND018_VERSION );
+			wp_enqueue_script( 'ruigehond018_handle_iframe_src', plugin_dir_url( __FILE__ ) . 'iframe-src.js', [], RUIGEHOND018_VERSION );
+			wp_localize_script( 'ruigehond018_handle_iframe_src', 'ruigehond018_domains', $vars['domains'] ?? array() );
+			return "<iframe style='width:100%;border:0;frame-border:0;height:100vh;' id='ruigehond018-iframe' src=''></iframe>";
+		}
 		// add the current domain to the iframe src slug
 		if ( true === isset( $_SERVER['HTTP_HOST'] ) ) {
 			$domain = ruigehond018_sanitize_domain( $_SERVER['HTTP_HOST'] );
@@ -29,7 +36,6 @@ function ruigehond_embed_parent_shortcode( $attributes = [], $content = null, $s
 			return 'Ruigehond embed: ' . esc_html__( 'HTTP_HOST is missing, cannot proceed.', 'ruigehond-embed-parent' );
 		}
 		// find the current src path from settings
-		$vars = get_option( 'ruigehond018' );
 		if ( ! is_array( $vars ) || ! isset( $vars['domains'] ) ) {
 			return 'Ruigehond embed: ' . esc_html__( 'Attribute src missing and no settings found.', 'ruigehond-embed-parent' );
 		}
@@ -45,7 +51,7 @@ function ruigehond_embed_parent_shortcode( $attributes = [], $content = null, $s
 	}
 	wp_enqueue_script( 'ruigehond015_snuggle_javascript', plugin_dir_url( __FILE__ ) . 'snuggle.js', [], RUIGEHOND018_VERSION );
 
-	return "<iframe style='width:100%;border:0;frame-border:0;height:100vh;' loading='eager' src='$src'></iframe>";
+	return "<!--Embed: $domain--><iframe style='width:100%;border:0;frame-border:0;height:100vh;' loading='eager' src='$src'></iframe>";
 }
 
 add_action( 'init', 'ruigehond018_run' );
@@ -120,23 +126,24 @@ function ruigehond018_settings(): void {
 	if ( false === isset( $_GET['page'] ) || 'ruigehond-embed-parent' !== $_GET['page'] ) {
 		return;
 	}
+
+	$vars = get_option( 'ruigehond018' );
+
+	echo "<!--Ruigehond embed parent vars:\n";
+	var_dump( $vars );
+	echo '-->';
+
 	// register a new section in the page
 	add_settings_section(
-		'ruigehond_embed_parent', // section id
+		'ruigehond_embed_parent_settings', // section id
 		esc_html__( 'Settings', 'ruigehond-embed-parent' ), // title
 		function () {
 			echo '<p>';
-			echo esc_html__( 'Each Iframe src you want to use can be summoned by several urls, that you can type in the textarea (one per line).', 'ruigehond-embed-parent' );
-			echo '<br>';
-			echo esc_html__( 'To add an entry, paste your Iframe src in the lowest entry.', 'ruigehond-embed-parent' );
-			echo ' ';
-			echo esc_html__( 'To delete, empty the Iframe src and hit Save. This can not be undone!', 'ruigehond-embed-parent' );
+			echo esc_html__( 'By default the iframe is built on the server. Check this box to manage the iframe on the client.', 'ruigehond-embed-parent' );
 			echo '</p>';
 		}, //callback
 		'ruigehond018' // page
 	);
-
-	$vars = get_option( 'ruigehond018' );
 
 	// normalise our array for settings purposes
 	if ( ! is_array( $vars ) ) {
@@ -150,6 +157,50 @@ function ruigehond018_settings(): void {
 	}
 	sort( $vars['srcs'] );
 	ksort( $vars['domains'] );
+
+	add_settings_field(
+		"ruigehond018_client_side",
+		__( 'Client side', 'ruigehond-embed-parent' ),
+		function ( $args ) {
+			$checked      = $args['checked'];
+			$setting_name = $args['setting_name'];
+			// make checkbox that transmits 1 or 0, depending on status
+			echo '<label><input type="hidden" name="ruigehond018[';
+			echo esc_attr( $setting_name );
+			echo ']" value="';
+			echo ( true === $checked ) ? '1' : '0';
+			echo '"><input type="checkbox"';
+			if ( true === $checked ) {
+				echo ' checked="checked"';
+			}
+			echo ' onclick="this.previousSibling.value=1-this.previousSibling.value"/>';
+			echo esc_html( $args['label_for'] );
+			echo '</label><br>';
+		},
+		'ruigehond018',
+		'ruigehond_embed_parent_settings',
+		array(
+			'checked' => isset($vars['client_side']) && true === $vars['client_side'],
+			'setting_name' => 'client_side',
+			'label_for' => __( 'Use client side embedding.', 'ruigehond-embed-parent'),
+		)
+	);
+
+	// register a new section in the page
+	add_settings_section(
+		'ruigehond_embed_parent', // section id
+		esc_html__( 'Embeds with their domains', 'ruigehond-embed-parent' ), // title
+		function () {
+			echo '<p>';
+			echo esc_html__( 'Each Iframe src you want to use can be summoned by several urls, that you can type in the textarea (one per line).', 'ruigehond-embed-parent' );
+			echo '<br>';
+			echo esc_html__( 'To add an entry, paste your Iframe src in the lowest entry.', 'ruigehond-embed-parent' );
+			echo ' ';
+			echo esc_html__( 'To delete, empty the Iframe src and hit Save. This can not be undone!', 'ruigehond-embed-parent' );
+			echo '</p>';
+		}, //callback
+		'ruigehond018' // page
+	);
 
 	$output_domains_field = function ( array $domains, int $index ) {
 		// output textarea with domains
@@ -210,6 +261,10 @@ function ruigehond018_settings_validate( $input ): array {
 
 	if ( false === is_array( $input ) ) {
 		return $options;
+	}
+
+	if (isset ($input['client_side'])) {
+		$options['client_side'] = '1' === $input['client_side'];
 	}
 
 	$options['domains'] = array(); // <- we build it entirely anew with the posted data
