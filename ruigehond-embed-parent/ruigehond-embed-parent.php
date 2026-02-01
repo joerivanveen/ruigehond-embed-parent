@@ -4,7 +4,7 @@ declare( strict_types=1 );
 Plugin Name: Ruigehond embed parent
 Plugin URI: https://github.com/joerivanveen/ruigehond-embed
 Description: When enabled, use the shortcode [ruigehond-embed-parent src="&lt;Iframe src&gt;"] to embed urls from sites where the full version of ruigehond-embed is installed.
-Version: 1.3.0
+Version: 1.4.0
 Requires at least: 5.0
 Tested up to: 6.5
 Requires PHP: 7.4
@@ -16,7 +16,7 @@ Domain Path: /languages/
 */
 defined( 'ABSPATH' ) || die();
 // This is plugin nr. 18 by Ruige hond. It identifies as: ruigehond018.
-const RUIGEHOND018_VERSION = '1.3.0';
+const RUIGEHOND018_VERSION = '1.4.0';
 /* this is for the parent website, belongs to ruigehond-embed: */
 add_shortcode( 'ruigehond-embed-parent', 'ruigehond_embed_parent_shortcode' );
 function ruigehond_embed_parent_shortcode( $attributes = [], $content = null, $short_code = 'ruigehond-embed-parent' ): string {
